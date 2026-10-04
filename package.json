@@ -1,0 +1,1 @@
+{"name":"fintech-weekly-digest-cron","private":true,"type":"module","scripts":{"start":"node --experimental-strip-types src/digest_cron.ts","test":"node --experimental-strip-types test/digest_decision.test.ts"},"dependencies":{"zod":"^3.23.8"}}
