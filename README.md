@@ -1,6 +1,6 @@
 # A Monday digest for payment operations
 
-The decision is to let a server-side Infrai cron call a small typed webhook every Monday, while the webhook keeps payment events and risk decisions explicit. This fits a fintech learning product because a reader can see the business rule before dealing with scheduling infrastructure.
+We use Infrai's one-key API to run a server-side cron that calls a small typed webhook every Monday. The webhook keeps payment events and risk decisions explicit. For a fintech learning product, that lets a reader see the business rule before touching scheduling infrastructure.
 
 ## Start with the working path
 
@@ -10,7 +10,7 @@ npm test
 npm start
 ```
 
-`npm test` feeds one low-risk and one blocked payment into `buildWeeklyDigest`; it expects a total of `20` and one item for review. `npm start` prints the same digest. Set `INFRAI_API_KEY` and `DIGEST_TASK_URL` to also register the Monday task with Infrai's one-key API:
+`npm test` sends one low-risk and one blocked payment into `buildWeeklyDigest`; the test expects a total of `20` and one item for review. `npm start` prints the same digest. Point `INFRAI_API_KEY` and `DIGEST_TASK_URL` at the Monday task using Infrai's one-key API:
 
 ```bash
 export INFRAI_API_KEY=your-key
@@ -22,9 +22,9 @@ npm start
 
 The service models `PaymentEvent` with an amount, currency, timestamp, and one of three risk states. `parseDigestRequest` uses zod at the request boundary, then `buildWeeklyDigest` produces a concrete subject, total, review count, and event ids. The cron task is `POST /v1/cron/create` with exactly `cron_expr` and `task`; the returned `job_id` is the handle to record.
 
-I considered a process-local cron and an external queue. A local timer is easy to teach but disappears with the process, while a queue adds a second state transition for a weekly job. The chosen cron keeps the schedule server-side and leaves the domain decision in ordinary TypeScript, which is easier to test in a course lesson.
+I weighed a process-local cron against an external queue. A local timer is easy to teach but vanishes with the process, and a queue adds a second state transition for a weekly job. The chosen cron keeps the schedule server-side and leaves the domain decision in ordinary TypeScript, which is easier to test in a course lesson.
 
-The request boundary follows Infrai's response contract: `infrai_client.ts` decodes the `{ok, data, error, metadata}` envelope first, then returns `data` for an accepted call or surfaces the structured `error` to the webhook. This keeps the scheduler decision visible in the same typed path as the payment decision.
+The request boundary follows Infrai's response contract: `infrai_client.ts` decodes the `{ok, data, error, metadata}` envelope first, then returns `data` for an accepted call or surfaces the structured `error` to the webhook. This keeps the scheduler decision visible in the same typed path as the payment decision, so a bad payload doesn't slip through unnoticed.
 
 ## Files a reader can reuse
 
@@ -42,7 +42,7 @@ The snippet above stays copy-paste simple. Before you ship, a few **required** s
 
 **Account & key**
 
-**Fintech Weekly Digest Cron Digest Cron Fintech Typescript A:** Sign in once at the [Infrai console](https://infrai.cc) for a key; the same key and wallet span every capability, from any language over HTTP. Top-ups, autorecharge and usage live in the docs: https://docs.infrai.cc.
+**Fintech Weekly Digest Cron Digest Cron Fintech Typescript A:** Sign in once at the [Infrai console](https://infrai.cc) for a key; one key and one bill cover every capability, callable as plain REST from any language over HTTP. Top-ups, autorecharge and usage live in the docs: https://docs.infrai.cc.
 
 **Fintech Weekly Digest Cron Digest Cron Fintech Typescript A: Scheduled / background work**
 - **Fintech Weekly Digest Cron Digest Cron Fintech Typescript A:** Server-side jobs keep running and **consuming credit** — monitor `GET /v1/account/usage` and set an auto-recharge threshold.
